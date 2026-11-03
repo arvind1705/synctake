@@ -1,0 +1,107 @@
+/* SyncTake Client Overlay Styles */
+.synctake-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.synctake-btn-group {
+  display: flex;
+  gap: 8px;
+  background: rgba(18, 20, 29, 0.88);
+  backdrop-filter: blur(12px);
+  padding: 8px 12px;
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.synctake-btn {
+  background: transparent;
+  color: #e2e8f0;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.synctake-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.synctake-btn-primary {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.synctake-btn-primary:hover {
+  background: #2563eb;
+}
+
+.synctake-btn-recording {
+  background: #ef4444 !important;
+  color: #ffffff;
+  animation: synctake-pulse 1.5s infinite;
+}
+
+@keyframes synctake-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Callout Overlay */
+.synctake-callout-overlay {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 12px 24px;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  pointer-events: none;
+  z-index: 999998;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  max-width: 650px;
+}
+
+.synctake-callout-overlay.active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.synctake-callout-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #60a5fa;
+  margin-bottom: 2px;
+}
+
+.synctake-callout-sub {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+/* Highlight Target Focus */
+.synctake-highlight {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 4px;
+  border-radius: 6px;
+  transition: outline 0.2s ease;
+}
