@@ -10,6 +10,9 @@ from synctake.cues import generate_cues
 from synctake.voice.assembler import assemble_voiceover
 from synctake.voice.preparer import prepare_clips
 from synctake.voice.generator import generate_clips
+from synctake.agent.inspector import inspect_html
+from synctake.agent.pacing import estimate_speech_duration, balance_timeline
+from synctake.agent.director import direct_walkthrough, auto_inject_client
 
 
 class TestSyncTake(unittest.TestCase):
@@ -81,12 +84,53 @@ class TestSyncTake(unittest.TestCase):
 
         data, sr = sf.read(str(out_wav))
         self.assertEqual(sr, 48000)
-        # Check stereo
         self.assertEqual(data.shape[1], 2)
-        # Check exact duration in samples
         expected_samples = int(10.0 * 48000)
         self.assertEqual(len(data), expected_samples)
         self.assertEqual(report["duration_seconds"], 10.0)
+
+    def test_agent_inspector_and_pacing(self):
+        sample_html = """
+        <html>
+          <body>
+            <header id="main-nav"><h1>Acme Cloud</h1></header>
+            <main>
+              <section id="metrics-card"><h2>Live Health</h2></section>
+              <button id="deploy-btn">Deploy</button>
+            </main>
+          </body>
+        </html>
+        """
+        blueprint = inspect_html(sample_html)
+        selectors = [el["selector"] for el in blueprint["landmarks"]]
+        self.assertIn("#main-nav", selectors)
+        self.assertIn("#metrics-card", selectors)
+        self.assertIn("#deploy-btn", selectors)
+
+        # Test Pacing
+        text = "Welcome to Acme Cloud. We provide instant deployments."
+        dur = estimate_speech_duration(text)
+        self.assertGreater(dur, 2.0)
+
+    def test_agent_director_and_auto_inject(self):
+        sample_html_file = self.dir / "app.html"
+        sample_html_file.write_text("<html><body><div id='hero'>Hello</div></body></html>", encoding="utf-8")
+
+        # 1. Direct walkthrough from guidance
+        plan = direct_walkthrough(
+            user_guidance="Give a 20-second product tour showing the hero section",
+            ui_source=sample_html_file,
+            target_duration=20.0,
+        )
+        self.assertEqual(plan["duration_seconds"], 20.0)
+        self.assertTrue(len(plan["scenes"]) >= 2)
+
+        # 2. Auto-inject client into HTML
+        injected = auto_inject_client(sample_html_file, config_path="./synctake.json")
+        self.assertTrue(injected)
+        content = sample_html_file.read_text(encoding="utf-8")
+        self.assertIn("synctake.js", content)
+        self.assertIn("synctake.css", content)
 
 
 if __name__ == "__main__":

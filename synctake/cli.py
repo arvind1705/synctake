@@ -1,7 +1,9 @@
 import sys
+import json
 import argparse
 import shutil
 from pathlib import Path
+
 from .schema import SyncTakeConfig
 from .cues import generate_cues
 from .voice.generator import generate_clips
@@ -9,6 +11,45 @@ from .voice.preparer import prepare_clips
 from .voice.assembler import assemble_voiceover
 from .video.exporter import export_video
 from .video.combiner import combine_video_audio
+from .agent.director import direct_walkthrough, auto_inject_client
+
+
+def cmd_plan(args):
+    """Agent Director: inspects UI and generates walkthrough from user guidance."""
+    print(f"[SyncTake Agent] Inspecting UI source: {args.ui}...")
+    plan = direct_walkthrough(
+        user_guidance=args.prompt,
+        ui_source=args.ui,
+        target_duration=args.duration,
+    )
+
+    out_file = Path(args.out).resolve()
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    out_file.write_text(json.dumps(plan, indent=2), encoding="utf-8")
+
+    print(f"[SyncTake Agent] Generated plan saved to: {out_file}")
+    print(f"  • Title: {plan.get('title')}")
+    print(f"  • Duration: {plan.get('duration_seconds')}s")
+    print(f"  • Scenes: {len(plan.get('scenes', []))}")
+    for s in plan.get("scenes", []):
+        print(f"    - [{s.get('at'):.1f}s] {s.get('id')}: focus='{s.get('focus')}' -> \"{s.get('title')}\"")
+
+    if args.inject and Path(args.ui).is_file():
+        # Copy client files next to HTML
+        client_dir = Path(__file__).resolve().parent / "client"
+        dest_dir = Path(args.ui).parent
+        shutil.copy(client_dir / "synctake.js", dest_dir / "synctake.js")
+        shutil.copy(client_dir / "synctake.css", dest_dir / "synctake.css")
+        auto_inject_client(args.ui, config_path=f"./{out_file.name}")
+
+
+def cmd_inject(args):
+    """Injects SyncTake player into an existing HTML file."""
+    client_dir = Path(__file__).resolve().parent / "client"
+    dest_dir = Path(args.html).parent
+    shutil.copy(client_dir / "synctake.js", dest_dir / "synctake.js")
+    shutil.copy(client_dir / "synctake.css", dest_dir / "synctake.css")
+    auto_inject_client(args.html, config_path=args.config)
 
 
 def cmd_init(args):
@@ -51,7 +92,6 @@ def cmd_init(args):
         ]
     }
 
-    import json
     cfg_file = dest / "synctake.json"
     cfg_file.write_text(json.dumps(sample_config, indent=2), encoding="utf-8")
 
@@ -168,9 +208,24 @@ def cmd_combine(args):
 def main():
     parser = argparse.ArgumentParser(
         prog="synctake",
-        description="SyncTake: Walkthrough-as-Code — Automated, perfectly synchronized product videos with zero-shot voice cloning.",
+        description="SyncTake: Agent-First Walkthrough-as-Code — UI understanding, script generation, and synchronized recording.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # plan (Agent Director)
+    p_plan = subparsers.add_parser("plan", help="Agent Director: inspect UI and generate walkthrough from user guidance")
+    p_plan.add_argument("ui", help="Path to local HTML file or project directory")
+    p_plan.add_argument("--prompt", required=True, help="User instructions / intent for the demo video")
+    p_plan.add_argument("--duration", type=float, default=30.0, help="Target total duration in seconds (default: 30)")
+    p_plan.add_argument("--out", default="./synctake.json", help="Output path for generated synctake.json")
+    p_plan.add_argument("--inject", action="store_true", help="Auto-inject synctake.js and css into the HTML file")
+    p_plan.set_defaults(func=cmd_plan)
+
+    # inject
+    p_inj = subparsers.add_parser("inject", help="Inject SyncTake client recorder into an HTML file")
+    p_inj.add_argument("html", help="Path to target HTML file")
+    p_inj.add_argument("--config", default="./synctake.json", help="Path to synctake.json configuration")
+    p_inj.set_defaults(func=cmd_inject)
 
     # init
     p_init = subparsers.add_parser("init", help="Scaffold a new SyncTake walkthrough project")
