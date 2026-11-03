@@ -1,83 +1,105 @@
-/* SyncTake Client Overlay Styles */
+/* SyncTake Adaptive Host-Themed Overlay */
+
+:root {
+  --st-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --st-bg: rgba(255, 255, 255, 0.94);
+  --st-border: #dce4d8;
+  --st-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --st-text: #1e293b;
+  --st-text-muted: #64748b;
+  --st-accent: #244b35;
+  --st-accent-text: #ffffff;
+  --st-btn-bg: #f8fafc;
+  --st-btn-hover: #f1f5f9;
+  --st-ring: rgba(36, 75, 53, 0.18);
+  --st-radius: 12px;
+}
+
 .synctake-widget {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 999999;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--st-font);
 }
 
 .synctake-btn-group {
   display: flex;
-  gap: 8px;
-  background: rgba(18, 20, 29, 0.88);
-  backdrop-filter: blur(12px);
-  padding: 8px 12px;
+  align-items: center;
+  gap: 6px;
+  background: var(--st-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 6px 8px;
   border-radius: 9999px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--st-shadow);
+  border: 1px solid var(--st-border);
+  color: var(--st-text);
 }
 
 .synctake-btn {
   background: transparent;
-  color: #e2e8f0;
+  color: var(--st-text);
   border: none;
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 500;
-  padding: 6px 14px;
+  font-weight: 600;
+  padding: 7px 14px;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.15s ease;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .synctake-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--st-btn-hover);
 }
 
 .synctake-btn-primary {
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--st-accent) !important;
+  color: var(--st-accent-text) !important;
 }
 
 .synctake-btn-primary:hover {
-  background: #2563eb;
+  filter: brightness(1.1);
+  box-shadow: 0 2px 8px var(--st-ring);
 }
 
 .synctake-btn-recording {
-  background: #ef4444 !important;
-  color: #ffffff;
+  background: #dc2626 !important;
+  color: #ffffff !important;
   animation: synctake-pulse 1.5s infinite;
 }
 
 @keyframes synctake-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
-  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
 }
 
-/* Callout Overlay */
+/* Callout Overlay Badge */
 .synctake-callout-overlay {
   position: fixed;
   top: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(-20px);
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  padding: 12px 24px;
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  color: #ffffff;
+  background: var(--st-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--st-border);
+  padding: 14px 26px;
+  border-radius: var(--st-radius);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  color: var(--st-text);
   pointer-events: none;
   z-index: 999998;
   opacity: 0;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
   max-width: 650px;
+  font-family: var(--st-font);
 }
 
 .synctake-callout-overlay.active {
@@ -87,21 +109,23 @@
 
 .synctake-callout-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
-  color: #60a5fa;
-  margin-bottom: 2px;
+  color: var(--st-accent);
+  margin-bottom: 3px;
 }
 
 .synctake-callout-sub {
   font-size: 13px;
-  color: #cbd5e1;
+  color: var(--st-text-muted);
+  line-height: 1.45;
 }
 
 /* Highlight Target Focus */
 .synctake-highlight {
-  outline: 2px solid #3b82f6 !important;
-  outline-offset: 4px;
-  border-radius: 6px;
-  transition: outline 0.2s ease;
+  outline: 2px solid var(--st-accent) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 5px var(--st-ring) !important;
+  border-radius: inherit;
+  transition: outline 0.2s ease, box-shadow 0.2s ease;
 }
