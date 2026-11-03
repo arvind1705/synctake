@@ -12,6 +12,29 @@ from .voice.assembler import assemble_voiceover
 from .video.exporter import export_video
 from .video.combiner import combine_video_audio
 from .agent.director import direct_walkthrough, auto_inject_client
+from .skill import install_skill
+
+
+def cmd_skill(args):
+    """Installs the SyncTake skill for coding agents."""
+    paths = install_skill(target_framework=args.framework, project_root=args.root)
+    print(f"[SyncTake Skill] Successfully installed coding agent skills for '{args.framework}':")
+    for p in paths:
+        print(f"  • {p}")
+    print("\nAny coding agent (Claude Code, Cursor, Antigravity) working in this project will now recognize and execute the SyncTake video workflow!")
+
+
+def cmd_capture(args):
+    """Runs automated browser capture using Playwright."""
+    from .video.capture import capture_walkthrough_playwright
+    config = SyncTakeConfig.load(args.config)
+    out = capture_walkthrough_playwright(
+        url=args.url,
+        output_webm=args.out,
+        config=config,
+        headless=not args.headed,
+    )
+    print(f"[SyncTake Capture] Screen recording saved to: {out}")
 
 
 def cmd_plan(args):
@@ -35,7 +58,6 @@ def cmd_plan(args):
         print(f"    - [{s.get('at'):.1f}s] {s.get('id')}: focus='{s.get('focus')}' -> \"{s.get('title')}\"")
 
     if args.inject and Path(args.ui).is_file():
-        # Copy client files next to HTML
         client_dir = Path(__file__).resolve().parent / "client"
         dest_dir = Path(args.ui).parent
         shutil.copy(client_dir / "synctake.js", dest_dir / "synctake.js")
@@ -95,12 +117,10 @@ def cmd_init(args):
     cfg_file = dest / "synctake.json"
     cfg_file.write_text(json.dumps(sample_config, indent=2), encoding="utf-8")
 
-    # Copy client assets
     client_dir = Path(__file__).resolve().parent / "client"
     shutil.copy(client_dir / "synctake.js", dest / "synctake.js")
     shutil.copy(client_dir / "synctake.css", dest / "synctake.css")
 
-    # Write a clean demo index.html
     html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -138,11 +158,6 @@ def cmd_init(args):
 """
     (dest / "index.html").write_text(html_content, encoding="utf-8")
     print(f"[SyncTake] Initialized starter project at: {dest}")
-    print("Files created:")
-    print("  • synctake.json  (Walkthrough scenes & timeline)")
-    print("  • synctake.js    (Browser overlay & recorder)")
-    print("  • synctake.css   (Callout styling)")
-    print("  • index.html     (Showcase web app)")
 
 
 def cmd_cues(args):
@@ -211,6 +226,20 @@ def main():
         description="SyncTake: Agent-First Walkthrough-as-Code — UI understanding, script generation, and synchronized recording.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # skill (Agent Skill installer)
+    p_skill = subparsers.add_parser("skill", help="Install SyncTake skill into coding agent environments")
+    p_skill.add_argument("--framework", default="all", choices=["all", "cursor", "claude", "agents"], help="Target coding agent environment")
+    p_skill.add_argument("--root", default=".", help="Project root directory (default: .)")
+    p_skill.set_defaults(func=cmd_skill)
+
+    # capture (Playwright automated recorder)
+    p_cap = subparsers.add_parser("capture", help="Automated headless browser screen recording")
+    p_cap.add_argument("--url", required=True, help="Web application URL to record")
+    p_cap.add_argument("--config", default="./synctake.json", help="Path to synctake.json")
+    p_cap.add_argument("--out", default="./build/capture.webm", help="Output path for recorded WebM")
+    p_cap.add_argument("--headed", action="store_true", help="Run headed browser instead of headless")
+    p_cap.set_defaults(func=cmd_capture)
 
     # plan (Agent Director)
     p_plan = subparsers.add_parser("plan", help="Agent Director: inspect UI and generate walkthrough from user guidance")
