@@ -74,6 +74,69 @@ def cmd_inject(args):
     auto_inject_client(args.html, config_path=args.config)
 
 
+def cmd_run(args):
+    """One-command full pipeline: automated capture -> voice synthesis -> lossless combine."""
+    config = SyncTakeConfig.load(args.config)
+    work_dir = Path(args.work_dir).resolve()
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_webm = work_dir / "capture.webm"
+    visual_mp4 = work_dir / "visual.mp4"
+    voice_wav = work_dir / "voiceover.wav"
+    raw_voice_dir = work_dir / "raw_voice"
+    clips_dir = work_dir / "clips"
+    out_mp4 = Path(args.out).resolve()
+
+    print(f"[SyncTake Run] Starting autonomous walkthrough pipeline for: {config.title}")
+    print(f"Duration: {config.duration_seconds}s | Scenes: {len(config.scenes)}")
+
+    # 1. Automated Playwright Screen Capture
+    print("\n--- [1/4] Automated Screen Capture (Playwright) ---")
+    from .video.capture import capture_walkthrough_playwright
+    capture_walkthrough_playwright(
+        url=args.url,
+        output_webm=raw_webm,
+        config=config,
+        headless=not args.headed,
+    )
+
+    # 2. Voice Synthesis & Timeline Assembly
+    print("\n--- [2/4] Voiceover Synthesis & Pacing Verification ---")
+    generate_clips(
+        config=config,
+        output_raw_dir=raw_voice_dir,
+        reference_audio=args.ref_audio,
+        reference_text=args.ref_text,
+        voice_name=args.voice_name,
+        force=args.force,
+        mock=args.mock,
+    )
+    prepare_clips(raw_dir=raw_voice_dir, clips_dir=clips_dir, config=config)
+    assemble_voiceover(clips_dir=clips_dir, output_wav=voice_wav, config=config)
+
+    # 3. Export Calibrated 1080p Video Track
+    print("\n--- [3/4] Exporting 1080p Calibrated Video Track ---")
+    export_video(
+        source_webm=raw_webm,
+        output_mp4=visual_mp4,
+        config=config,
+        pad_tail=args.pad_tail,
+        force=True,
+    )
+
+    # 4. Lossless Mux
+    print("\n--- [4/4] Lossless Muxing (EBU R128 AAC + H.264 Stream Copy) ---")
+    combine_video_audio(
+        video_path=visual_mp4,
+        voiceover_path=voice_wav,
+        output_path=out_mp4,
+        config=config,
+        force=True,
+    )
+
+    print(f"\n🎉 [SyncTake Run] Demo video created successfully at:\n  --> {out_mp4}")
+
+
 def cmd_init(args):
     dest = Path(args.dest or ".").resolve()
     dest.mkdir(parents=True, exist_ok=True)
@@ -82,7 +145,7 @@ def cmd_init(args):
         "title": "My Product Walkthrough",
         "duration_seconds": 30,
         "voice": {
-            "provider": "mlx",
+            "provider": "system",
             "reference_audio": "./voice-reference.wav",
             "reference_text": "Hello, this is a test reference of my voice."
         },
@@ -182,6 +245,7 @@ def cmd_voice(args):
         output_raw_dir=raw_dir,
         reference_audio=args.ref_audio,
         reference_text=args.ref_text,
+        voice_name=args.voice_name,
         only_scenes=args.only.split(",") if args.only else None,
         force=args.force,
         mock=args.mock,
@@ -226,6 +290,21 @@ def main():
         description="SyncTake: Agent-First Walkthrough-as-Code — UI understanding, script generation, and synchronized recording.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # run (All-in-one autonomous pipeline for coding agents)
+    p_run = subparsers.add_parser("run", help="All-in-one autonomous run: automated capture -> voice -> mux")
+    p_run.add_argument("--url", required=True, help="Web application URL to record")
+    p_run.add_argument("--config", default="./synctake.json", help="Path to synctake.json")
+    p_run.add_argument("--out", default="./demo.mp4", help="Output path for final MP4 video")
+    p_run.add_argument("--work-dir", default="./build", help="Temporary build directory")
+    p_run.add_argument("--ref-audio", default=None, help="Reference audio sample for voice cloning")
+    p_run.add_argument("--ref-text", default=None, help="Exact transcript of the reference sample")
+    p_run.add_argument("--voice-name", default=None, help="System TTS voice name (e.g. Samantha, Daniel)")
+    p_run.add_argument("--pad-tail", type=float, default=0.5, help="Seconds to freeze final frame before clamp")
+    p_run.add_argument("--headed", action="store_true", help="Run headed browser instead of headless")
+    p_run.add_argument("--force", action="store_true", help="Overwrite existing assets")
+    p_run.add_argument("--mock", action="store_true", help="Generate synthetic test audio without GPU model")
+    p_run.set_defaults(func=cmd_run)
 
     # skill (Agent Skill installer)
     p_skill = subparsers.add_parser("skill", help="Install SyncTake skill into coding agent environments")
@@ -272,6 +351,7 @@ def main():
     p_voice.add_argument("config", help="Path to synctake.json")
     p_voice.add_argument("--ref-audio", default=None, help="Reference audio sample for voice cloning")
     p_voice.add_argument("--ref-text", default=None, help="Exact transcript of the reference sample")
+    p_voice.add_argument("--voice-name", default=None, help="System TTS voice name (e.g. Samantha, Daniel)")
     p_voice.add_argument("--out", default="./build/voice", help="Output directory")
     p_voice.add_argument("--only", default=None, help="Comma-separated scene IDs for selective re-takes")
     p_voice.add_argument("--force", action="store_true", help="Overwrite existing clips")

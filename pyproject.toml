@@ -4,17 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "synctake"
-version = "0.1.0"
-description = "SyncTake: Walkthrough-as-Code — Automated, perfectly synchronized product walkthrough videos with zero-shot voice cloning."
+version = "0.2.0"
+description = "SyncTake: Agent-First Walkthrough-as-Code — Automated, perfectly synchronized product walkthrough videos with zero audio drift."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "SyncTake Contributors" }
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Multimedia :: Video",
     "Topic :: Multimedia :: Sound/Audio",
@@ -32,6 +31,15 @@ mlx = [
     "mlx>=0.10.0",
     "mlx-audio>=0.6.0",
 ]
+playwright = [
+    "playwright>=1.40.0",
+]
 
 [project.scripts]
 synctake = "synctake.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["synctake*"]
+
+[tool.setuptools.package-data]
+synctake = ["client/*"]
